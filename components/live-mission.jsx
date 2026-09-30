@@ -45,8 +45,8 @@ function MissionSummary({ state }) {
       <div className="mission-title-block">
         <span className="live-pip"><i/> LIVE OPERATION</span>
         <div>
-          <h1 id="missionTitle">OPERATION VARUNA</h1>
-          <span>FLD-042 / RIVER DISTRICT 07</span>
+          <h1 id="missionTitle">{mission.name.toUpperCase()}</h1>
+          <span>{mission.id} / {mission.disasterType.toUpperCase()} · {mission.missionType.toUpperCase()}</span>
         </div>
       </div>
       <div className="strip-metrics" aria-label="Mission summary">
@@ -83,7 +83,7 @@ function MissionMap({ state, selectedId, onSelect, onInspect, addToast }) {
   return (
     <section className="panel map-panel" aria-labelledby="mapHeading">
       <header className="panel-header map-header">
-        <SectionHeading index="01" title="LIVE DISASTER MAP" subtitle="River District 07 · flood response" id="mapHeading" />
+        <SectionHeading index="01" title="LIVE RESPONSE MAP" subtitle={`${state.mission.region} · ${state.mission.missionType}`} id="mapHeading" />
         <div className="map-toolbar">
           <span className="coordinate-readout">{vehicle.position.lat.toFixed(4)}°N / {vehicle.position.lng.toFixed(4)}°E</span>
           <button className={`tool-button ${legendOpen ? "active" : ""}`} type="button" aria-pressed={legendOpen} onClick={() => setLegendOpen((current) => !current)}>
@@ -96,7 +96,7 @@ function MissionMap({ state, selectedId, onSelect, onInspect, addToast }) {
       </header>
 
       <div className="map-stage" ref={stageRef}>
-        <svg className="mission-map" style={{ transform: `scale(${mapZoom})` }} viewBox="0 0 1000 620" role="img" aria-label="Drone mission map showing a flood response survey route">
+        <svg className="mission-map" style={{ transform: `scale(${mapZoom})` }} viewBox="0 0 1000 620" role="img" aria-label="Role-based drone emergency-response map showing survey, medical delivery, and mesh relay assets">
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#303a34" strokeOpacity=".14" strokeWidth="1"/></pattern>
             <pattern id="surveyHatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(42)"><rect width="14" height="14" fill="#819682" fillOpacity=".13"/><path d="M0 0V14" stroke="#829b86" strokeOpacity=".28" strokeWidth="4"/></pattern>
@@ -141,6 +141,17 @@ function MissionMap({ state, selectedId, onSelect, onInspect, addToast }) {
             ))}
           </g>
 
+          <g id="fleetAssets" aria-label="Simulated response assets">
+            {state.fleet.filter((asset) => asset.id !== vehicle.id && asset.implemented).map((asset) => (
+              <g key={asset.id} className={`fleet-marker ${asset.role.includes("Medical") ? "medical" : "relay"}`} transform={`translate(${asset.mapX} ${asset.mapY})`}>
+                <circle className="fleet-range" r="24"/>
+                <circle className="fleet-core" r="13"/>
+                {asset.role.includes("Medical") ? <path d="M-6-2h4v-4h4v4h4v4H2v4h-4V2h-4Z"/> : <path d="M-7 4a10 10 0 0 1 14 0M-4 1a6 6 0 0 1 8 0M0 5v4"/>}
+                <g className="fleet-label" transform="translate(20 -25)"><rect width="132" height="37" rx="7"/><text x="10" y="15">{asset.id} · {asset.role.includes("Medical") ? "MEDICAL" : "RELAY"}</text><text className="fleet-status" x="10" y="28">{asset.status.toUpperCase()}</text></g>
+              </g>
+            ))}
+          </g>
+
           <g className="drone-cluster" transform={`translate(${vehicle.position.mapX.toFixed(1)} ${vehicle.position.mapY.toFixed(1)})`}>
             <circle className="gps-radius" r={34 + vehicle.gpsAccuracyM * 10}/><line className="velocity desired" x1="0" y1="0" x2="62" y2="-28" markerEnd="url(#arrowDesired)"/><line className="velocity safe" x1="0" y1="0" x2="24" y2="-55" markerEnd="url(#arrowSafe)"/>
             <g className="drone-marker" transform={`rotate(${vehicle.headingDeg.toFixed(1)})`} filter="url(#mapShadow)"><circle r="17"/><path d="M-17-17 17 17M17-17-17 17M-21-21h8v8h-8zM13-21h8v8h-8zM-21 13h8v8h-8zM13 13h8v8h-8zM-4-9 0-17 4-9Z"/></g>
@@ -160,7 +171,7 @@ function MissionMap({ state, selectedId, onSelect, onInspect, addToast }) {
           <button className="inspector-close" type="button" aria-label="Close marker details" onClick={() => onSelect(null)}>×</button>
           <div className="inspector-kicker">SELECTED DETECTION</div><div className={`inspector-visual ${selected?.kind === "hazard" ? "hazard" : "rgb-mini"}`}><span/></div>
           <div className="inspector-heading"><div><span>{selected?.kind?.toUpperCase() || "DETECTION"}</span><strong>{selected?.id || "—"}</strong></div><span className={`severity-badge ${severityClass(selected?.severity)}`}>{selected?.severity?.toUpperCase() || "—"}</span></div>
-          <dl><div><dt>Coordinates</dt><dd>{selected?.coordinates || "—"}</dd></div><div><dt>Confidence</dt><dd>{selected ? `${selected.confidence}%` : "—"}</dd></div><div><dt>Observed</dt><dd>{selected?.observedAt || "—"}</dd></div><div><dt>Status</dt><dd>{selected?.responseStatus || "—"}</dd></div></dl>
+          <dl><div><dt>Coordinates</dt><dd>{selected?.coordinates || "—"}</dd></div><div><dt>Confidence</dt><dd>{selected ? `${selected.confidence}%` : "—"}</dd></div><div><dt>Triage</dt><dd>{selected?.medicalPriority || "Not required"}</dd></div><div><dt>Observed</dt><dd>{selected?.observedAt || "—"}</dd></div><div><dt>Status</dt><dd>{selected?.responseStatus || "—"}</dd></div></dl>
           <button className="primary-action compact" type="button" disabled={!selected} onClick={() => selected && onInspect(selected.id)}>INVESTIGATE DETECTION</button>
         </aside>
       </div>
@@ -234,6 +245,7 @@ function PriorityQueue({ state, onNavigate, onCommand, onConfirmCommand }) {
                     alertId: alert.id,
                     targetId: alert.targetId,
                     coordinates: alert.coordinates,
+                    assetId: alert.assignedResponder ?? state.payload.assetId,
                     medkitsAvailable: state.payload.medkitsAvailable,
                   })}
                 >DROP MEDKIT</button>
@@ -242,6 +254,54 @@ function PriorityQueue({ state, onNavigate, onCommand, onConfirmCommand }) {
             </div>
           </article>
         )) : <div className="empty-state">NO ACTIVE ALERTS</div>}
+      </div>
+    </section>
+  );
+}
+
+function EmergencyResponseNetwork({ state, onInspectDetection }) {
+  const response = state.medicalResponse;
+  return (
+    <section className="response-network" aria-labelledby="responseNetworkHeading">
+      <header className="panel-header response-network-header">
+        <SectionHeading index="06" title="EMERGENCY RESPONSE NETWORK" subtitle="Detection-to-handoff coordination over telemetry mesh" id="responseNetworkHeading" />
+        <span className="simulation-badge"><i/> GAZEBO SITL</span>
+      </header>
+      <div className="response-network-body">
+        <article className="medical-case-card">
+          <div className="case-heading">
+            <div className="medical-symbol">+</div>
+            <div><span>{response.caseId} · MEDICAL RESPONSE</span><h3>{response.targetId} / {response.triage.toUpperCase()}</h3><p>{response.status}</p></div>
+            <span className="triage-badge">{response.triage}</span>
+          </div>
+          <div className="response-chain" aria-label="Medical response workflow">
+            {response.stages.map((stage, index) => (
+              <div key={stage.id} className={`response-stage ${stage.state}`}>
+                <span>{stage.state === "complete" ? "✓" : String(index + 1).padStart(2, "0")}</span>
+                <div><strong>{stage.label}</strong><small>{stage.detail}</small></div>
+              </div>
+            ))}
+          </div>
+          <dl className="case-details">
+            <div><dt>GEOTAG</dt><dd>{response.coordinates}</dd></div>
+            <div><dt>PAYLOAD</dt><dd>{response.requestedPayload}</dd></div>
+            <div><dt>DELIVERY ASSET</dt><dd>{response.assignedAsset}</dd></div>
+            <div><dt>GROUND TEAM / ETA</dt><dd>{response.assignedTeam} · {response.teamEta}</dd></div>
+          </dl>
+          <div className="case-footer"><span><i/> {response.dropZone}</span><button type="button" onClick={() => onInspectDetection(response.targetId)}>OPEN CASE →</button></div>
+        </article>
+
+        <aside className="asset-roster">
+          <div className="asset-roster-heading"><div><span>ROLE-BASED ASSETS</span><strong>{state.fleet.filter((asset) => asset.implemented).length} ACTIVE / {state.fleet.length} TOTAL</strong></div><span>MESH LINKED</span></div>
+          <div className="asset-list">
+            {state.fleet.map((asset) => (
+              <article key={asset.id} className={asset.implemented ? "" : "planned"}>
+                <div className="asset-id"><i>{asset.id.startsWith("UGV") ? "R" : "D"}</i><div><strong>{asset.id}</strong><span>{asset.role}</span></div></div>
+                <div className="asset-state"><strong>{asset.status}</strong><span>{asset.implemented ? `${asset.batteryPercent}% BAT · ${asset.meshQualityPercent}% MESH` : "CONCEPT ROADMAP"}</span></div>
+              </article>
+            ))}
+          </div>
+        </aside>
       </div>
     </section>
   );
@@ -298,7 +358,7 @@ function DroneLogConsole({ state }) {
   return (
     <section className="panel drone-log-panel" aria-labelledby="droneLogsHeading">
       <header className="panel-header drone-log-header">
-        <SectionHeading index="06" title="DRONE LOG STREAM" subtitle={`Gazebo SITL · ${state.droneLogs.length} total entries`} id="droneLogsHeading" />
+        <SectionHeading index="07" title="MISSION & VEHICLE LOGS" subtitle={`Gazebo SITL · ${state.droneLogs.length} total entries`} id="droneLogsHeading" />
         <div className="log-link-status"><span><i/> TELEMETRY MESH</span><b>LIVE</b></div>
       </header>
       <div className="log-toolbar" aria-label="Drone log filters">
@@ -338,6 +398,7 @@ export default function LiveMission({ active, state, selectedDetectionId, onSele
         <MissionTimeline state={state}/>
         <FlightSafety state={state} onCommand={onCommand} onConfirmCommand={onConfirmCommand}/>
       </div>
+      <EmergencyResponseNetwork state={state} onInspectDetection={onInspectDetection}/>
       <DroneLogConsole state={state}/>
     </section>
   );

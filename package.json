@@ -1,8 +1,8 @@
 {
-  "name": "aegis-rescue-command",
+  "name": "robonerve-emergency-command",
   "version": "0.2.0",
   "private": true,
-  "description": "Next.js disaster-response drone ground control dashboard",
+  "description": "Next.js role-based drone and robot emergency-response command dashboard",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,6 +10,7 @@
     "check": "next build"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "next": "16.3.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

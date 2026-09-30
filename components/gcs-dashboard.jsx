@@ -15,10 +15,10 @@ import {
 } from "./secondary-views";
 
 const NAV_ITEMS = [
-  { id: "live", label: "Live mission", shortLabel: "Fly", icon: "fly" },
+  { id: "live", label: "Live response mission", shortLabel: "Mission", icon: "fly" },
   { id: "detections", label: "Detections", shortLabel: "Detect", icon: "detect", badge: "05" },
   { id: "planning", label: "Mission planning", shortLabel: "Plan", icon: "plan" },
-  { id: "health", label: "Drone health", shortLabel: "Vehicle", icon: "health" },
+  { id: "health", label: "Response asset health", shortLabel: "Assets", icon: "health" },
   { id: "reports", label: "Reports and history", shortLabel: "Reports", icon: "reports" },
 ];
 
@@ -45,9 +45,9 @@ function BrandMark() {
 function GcsRail({ page, onNavigate, soundOn, onToggleSound }) {
   return (
     <aside className="gcs-rail" aria-label="Ground control navigation">
-      <button className="brand" type="button" onClick={() => onNavigate("live")} aria-label="Aegis rescue command">
+      <button className="brand" type="button" onClick={() => onNavigate("live")} aria-label="RoboNerve emergency response command">
         <BrandMark />
-        <span className="brand-copy"><strong>AEGIS</strong><small>GCS</small></span>
+        <span className="brand-copy"><strong>ROBO</strong><small>NERVE</small></span>
       </button>
       <nav className="primary-nav" aria-label="Dashboard pages">
         {NAV_ITEMS.map((item) => (
@@ -110,7 +110,7 @@ function ConfirmationModal({ command, checked, onChecked, onCancel, onConfirm })
       icon: "+",
       code: "PAYLOAD COMMAND",
       title: "DROP MEDKIT AT GEOTAG?",
-      body: `DR-01 will release one medkit at ${payload.coordinates ?? "the received coordinate"}. ${payload.medkitsAvailable ?? "Two"} medkits are currently available in the simulated payload bay.`,
+      body: `${payload.assetId ?? "DR-02"} will release one medkit at ${payload.coordinates ?? "the received coordinate"}. ${payload.medkitsAvailable ?? "Two"} medkits are currently available in the simulated payload bay.`,
       check: "I verified the geotag and confirmed the drop zone is clear.",
       confirm: "CONFIRM MEDKIT DROP",
     },
@@ -267,13 +267,13 @@ export default function GcsDashboard() {
   }, []);
 
   const exportCsv = useCallback(() => {
-    download("FLD-042-detections.csv", csvFromDetections(state.detections), "text/csv;charset=utf-8");
+    download(`${state.mission.id}-detections.csv`, csvFromDetections(state.detections), "text/csv;charset=utf-8");
     addToast("EXPORT READY", "Detection list saved as CSV.");
-  }, [addToast, download, state.detections]);
+  }, [addToast, download, state.detections, state.mission.id]);
 
   const exportJson = useCallback(() => {
     download(
-      "FLD-042-mission.json",
+      `${state.mission.id}-mission.json`,
       JSON.stringify({ contract: TELEMETRY_CONTRACT, ...state }, null, 2),
       "application/json",
     );
@@ -319,6 +319,7 @@ export default function GcsDashboard() {
         <DroneHealthView active={page === "health"} state={state} />
         <ReportsView
           active={page === "reports"}
+          state={state}
           onExportCsv={exportCsv}
           onExportJson={exportJson}
           onPrint={() => window.print()}

@@ -27,8 +27,8 @@ export function DetectionsView({ active, state, query, onQueryChange, onCommand,
 
   return (
     <section className={`page workspace-page ${active ? "active" : ""}`} id="detectionsPage" aria-labelledby="detectionsTitle" aria-hidden={!active}>
-      <WorkspaceHeader code="02 / INTELLIGENCE" title="DETECTIONS" description="Review, verify, and route actionable field intelligence." id="detectionsTitle">
-        <div className="workspace-stats"><div><span>UNVERIFIED</span><strong>{String(unverified).padStart(2, "0")}</strong></div><div><span>CRITICAL</span><strong>01</strong></div><div><span>TEAMS ACTIVE</span><strong>02</strong></div></div>
+      <WorkspaceHeader code="02 / INTELLIGENCE" title="DETECTIONS & TRIAGE" description="Verify field intelligence, assign medical priority, and route the response." id="detectionsTitle">
+        <div className="workspace-stats"><div><span>UNVERIFIED</span><strong>{String(unverified).padStart(2, "0")}</strong></div><div><span>IMMEDIATE</span><strong>01</strong></div><div><span>TEAMS ACTIVE</span><strong>02</strong></div></div>
       </WorkspaceHeader>
       <div className="filter-bar">
         <div className="segmented detection-filter">
@@ -44,7 +44,7 @@ export function DetectionsView({ active, state, query, onQueryChange, onCommand,
               {visible.map((item) => (
                 <tr key={item.id} className={item.verification === "Rejected" ? "is-rejected" : ""}>
                   <td><div className="detection-id-cell"><div className={`detection-thumb ${item.kind === "hazard" ? "hazard" : ""}`}/><div><strong>{item.id}</strong><span>{item.observedAt}</span></div></div></td>
-                  <td><div className="type-cell"><strong>{item.label}</strong><span>{item.condition}</span></div></td>
+                  <td><div className="type-cell"><strong>{item.label}</strong><span>{item.medicalPriority ? `${item.medicalPriority} triage · ` : ""}{item.condition}</span></div></td>
                   <td><div className="type-cell"><strong>{item.location}</strong><span>{item.coordinates}</span></div></td>
                   <td><div className="confidence">{item.confidence}%<i><b style={{ width: `${item.confidence}%` }}/></i></div></td>
                   <td><span className={`severity-badge ${severityClass(item.priority)}`}>{item.priority.toUpperCase()}</span></td>
@@ -56,9 +56,9 @@ export function DetectionsView({ active, state, query, onQueryChange, onCommand,
           </table>
         </div>
         <aside className="panel response-panel">
-          <span className="page-code">GROUND RESPONSE</span><h2>RESCUE TEAMS</h2>
+          <span className="page-code">COORDINATED RESPONSE</span><h2>RESCUE TEAMS</h2>
           <div className="team-list">
-            <article><i className="team-symbol">A</i><div><strong>ALPHA MEDICAL</strong><span>En route · SV-017</span></div><b>04:12</b></article>
+            <article><i className="team-symbol">A</i><div><strong>ALPHA MEDICAL</strong><span>En route · {state.medicalResponse.targetId}</span></div><b>{state.medicalResponse.teamEta}</b></article>
             <article><i className="team-symbol">B</i><div><strong>BRAVO RAPID</strong><span>Available · North staging</span></div><b className="available">READY</b></article>
             <article><i className="team-symbol muted">C</i><div><strong>CHARLIE FIRE</strong><span>On site · HZ-009</span></div><b>12:48</b></article>
           </div>
@@ -74,8 +74,8 @@ export function MissionPlanningView({ active, addToast }) {
   const [velocity, setVelocity] = useState(8);
   return (
     <section className={`page workspace-page ${active ? "active" : ""}`} id="planningPage" aria-labelledby="planningTitle" aria-hidden={!active}>
-      <WorkspaceHeader code="03 / MISSION DESIGN" title="MISSION PLANNING" description="Define the survey envelope, flight profile, and safety policy." id="planningTitle">
-        <button className="primary-action compact" type="button" onClick={() => addToast("ROUTE GENERATED", "28 waypoints · 10.6 km² · estimated flight time 31 minutes.")}>GENERATE SURVEY ROUTE</button>
+      <WorkspaceHeader code="03 / MISSION DESIGN" title="MISSION PLANNING" description="Define the response objective, assign vehicle roles, and apply the flight-safety policy." id="planningTitle">
+        <button className="primary-action compact" type="button" onClick={() => addToast("RESPONSE PLAN GENERATED", "3 drone roles · 28 survey waypoints · medical delivery route staged.")}>GENERATE RESPONSE PLAN</button>
       </WorkspaceHeader>
       <div className="planning-layout">
         <section className="panel planning-map">
@@ -92,6 +92,7 @@ export function MissionPlanningView({ active, addToast }) {
             <header><span>FLIGHT PROFILE</span><b>01</b></header>
             <label>Survey altitude<div><input type="range" min="30" max="120" value={altitude} onChange={(event) => setAltitude(event.target.value)}/><output>{altitude} M</output></div></label>
             <label>Cruise velocity<div><input type="range" min="2" max="15" value={velocity} onChange={(event) => setVelocity(event.target.value)}/><output>{velocity} M/S</output></div></label>
+            <div className="field-row"><label>Mission objective<select defaultValue="Search + Medical Response"><option>Search + Medical Response</option><option>Search & Rescue</option><option>Rapid Assessment</option><option>Emergency Supply</option></select></label><label>Deployment policy<select defaultValue="Role based"><option>Role based</option><option>Single vehicle</option><option>Operator assigned</option></select></label></div>
             <div className="field-row"><label>Pattern<select defaultValue="Lawnmower"><option>Lawnmower</option><option>Spiral</option><option>Perimeter</option></select></label><label>Overlap<select defaultValue="30%"><option>30%</option><option>40%</option><option>50%</option></select></label></div>
           </section>
           <section className="panel settings-card">
@@ -115,26 +116,26 @@ function HealthCard({ title, index, children, className = "" }) {
 export function DroneHealthView({ active, state }) {
   return (
     <section className={`page workspace-page ${active ? "active" : ""}`} id="healthPage" aria-labelledby="healthTitle" aria-hidden={!active}>
-      <WorkspaceHeader code="04 / SYSTEMS" title="DRONE HEALTH" description="Flight stack, localization, communications, and edge-AI status." id="healthTitle"><span className="overall-health"><i/> ALL PRIMARY SYSTEMS NOMINAL</span></WorkspaceHeader>
+      <WorkspaceHeader code="04 / SYSTEMS" title="RESPONSE ASSET HEALTH" description="Flight stack, payload, localization, edge AI, and telemetry-mesh status." id="healthTitle"><span className="overall-health"><i/> RESPONSE NETWORK NOMINAL</span></WorkspaceHeader>
       <div className="health-grid">
         <HealthCard title="POWER SYSTEM" index="01" className="battery-health"><div className="radial-gauge"><strong>72<small>%</small></strong><span>18:42 REMAINING</span></div><dl><div><dt>Voltage</dt><dd>22.4 V</dd></div><div><dt>Draw</dt><dd>18.6 A</dd></div><div><dt>Cells</dt><dd>6 / balanced</dd></div><div><dt>Reserve RTH</dt><dd>25%</dd></div></dl></HealthCard>
         <HealthCard title="NAVIGATION" index="02"><div className="health-status"><b><i/>RELIABLE</b><span>GPS + VISUAL-INERTIAL</span></div><dl><div><dt>GPS</dt><dd className="good-text">3D fix · 18 sats</dd></div><div><dt>Accuracy</dt><dd>± 0.8 m</dd></div><div><dt>SLAM</dt><dd className="good-text">Tracking</dd></div><div><dt>Visual odometry</dt><dd className="good-text">Active</dd></div><div><dt>LiDAR</dt><dd className="good-text">Active · 20 Hz</dd></div><div><dt>IMU / Compass</dt><dd className="good-text">Nominal</dd></div></dl></HealthCard>
         <HealthCard title="TELEMETRY MESH" index="03"><div className="signal-chart"><i style={{height:"30%"}}/><i style={{height:"45%"}}/><i style={{height:"62%"}}/><i style={{height:"78%"}}/><i style={{height:`${state.communication.linkQualityPercent}%`}}/><strong>{state.communication.signalDbm} dBm</strong></div><dl><div><dt>Primary link</dt><dd className="good-text">{state.communication.networkType}</dd></div><div><dt>Mesh quality</dt><dd>{state.communication.linkQualityPercent}%</dd></div><div><dt>Command latency</dt><dd>{state.communication.telemetryLatencyMs} ms</dd></div><div><dt>Gateway route</dt><dd>SITL → backend</dd></div><div><dt>Last packet</dt><dd>{(state.communication.lastCommunicationMs / 1000).toFixed(1)} s ago</dd></div></dl></HealthCard>
         <HealthCard title="EDGE AI" index="04"><div className="health-status"><b><i/>INFERENCE ACTIVE</b><span>YOLOv8-S + THERMAL FUSION</span></div><dl><div><dt>Inference rate</dt><dd>27.8 FPS</dd></div><div><dt>Latency</dt><dd>31 ms</dd></div><div><dt>GPU / NPU</dt><dd>62% / 48%</dd></div><div><dt>Temperature</dt><dd>67°C</dd></div><div><dt>Memory</dt><dd>4.2 / 8 GB</dd></div><div><dt>Last inference</dt><dd className="good-text">36 ms ago</dd></div></dl></HealthCard>
-        <HealthCard title="ACTUATION & PAYLOAD" index="05" className="wide-card"><div className="motor-grid"><div><b>M1</b><span>4,812 RPM</span><i/></div><div><b>M2</b><span>4,796 RPM</span><i/></div><div><b>M3</b><span>4,825 RPM</span><i/></div><div><b>M4</b><span>4,804 RPM</span><i/></div></div><dl><div><dt>ESC health</dt><dd className="good-text">4 / 4 nominal</dd></div><div><dt>Payload</dt><dd>1.84 kg</dd></div><div><dt>RGB camera</dt><dd className="good-text">Online</dd></div><div><dt>Thermal camera</dt><dd className="good-text">Online</dd></div><div><dt>Gimbal</dt><dd className="good-text">Tracking</dd></div></dl></HealthCard>
+        <HealthCard title="ACTUATION & MEDICAL PAYLOAD" index="05" className="wide-card"><div className="motor-grid"><div><b>M1</b><span>4,812 RPM</span><i/></div><div><b>M2</b><span>4,796 RPM</span><i/></div><div><b>M3</b><span>4,825 RPM</span><i/></div><div><b>M4</b><span>4,804 RPM</span><i/></div></div><dl><div><dt>ESC health</dt><dd className="good-text">4 / 4 nominal</dd></div><div><dt>Medical asset</dt><dd>{state.payload.assetId}</dd></div><div><dt>Medkits</dt><dd className="good-text">{state.payload.medkitsAvailable} · {state.payload.bayStatus}</dd></div><div><dt>RGB camera</dt><dd className="good-text">Online</dd></div><div><dt>Thermal camera</dt><dd className="good-text">Online</dd></div><div><dt>Gimbal</dt><dd className="good-text">Tracking</dd></div></dl></HealthCard>
       </div>
     </section>
   );
 }
 
-export function ReportsView({ active, onExportCsv, onExportJson, onPrint }) {
+export function ReportsView({ active, state, onExportCsv, onExportJson, onPrint }) {
   return (
     <section className={`page workspace-page ${active ? "active" : ""}`} id="reportsPage" aria-labelledby="reportsTitle" aria-hidden={!active}>
       <WorkspaceHeader code="05 / ARCHIVE" title="REPORTS & HISTORY" description="Mission evidence, operational replay, and portable incident data." id="reportsTitle"><div className="report-actions"><button className="secondary-action compact" type="button" onClick={onExportCsv}>EXPORT CSV</button><button className="primary-action compact" type="button" onClick={onPrint}>SITUATION REPORT</button></div></WorkspaceHeader>
       <div className="reports-layout">
         <section className="panel current-report">
-          <div className="report-cover"><span className="live-pip"><i/> CURRENT MISSION</span><h2>OPERATION<br/>VARUNA</h2><p>Flood response · River District 07</p><div className="report-summary-grid"><div><span>SURVEYED</span><strong>6.8 km²</strong></div><div><span>SURVIVORS</span><strong>03</strong></div><div><span>HAZARDS</span><strong>02</strong></div><div><span>LIMITATIONS</span><strong>01</strong></div></div><button type="button" onClick={onExportJson}>DOWNLOAD FULL MISSION JSON <span>↓</span></button></div>
-          <div className="report-inclusions"><span>REPORT INCLUDES</span><ul><li>Mission summary and flight details</li><li>Survivor coordinates and evidence</li><li>Hazard impact assessment</li><li>Safe and blocked access routes</li><li>Uninspected areas and limitations</li></ul></div>
+          <div className="report-cover"><span className="live-pip"><i/> EMERGENCY RESPONSE MISSION</span><h2>{state.mission.name.split(" ")[0].toUpperCase()}<br/>{state.mission.name.split(" ").slice(1).join(" ").toUpperCase()}</h2><p>{state.mission.disasterType} · {state.mission.missionType} · {state.mission.region}</p><div className="report-summary-grid"><div><span>SURVEYED</span><strong>{state.mission.surveyedAreaKm2} km²</strong></div><div><span>SURVIVORS</span><strong>03</strong></div><div><span>HAZARDS</span><strong>02</strong></div><div><span>MEDICAL CASES</span><strong>01</strong></div></div><button type="button" onClick={onExportJson}>DOWNLOAD FULL MISSION JSON <span>↓</span></button></div>
+          <div className="report-inclusions"><span>REPORT INCLUDES</span><ul><li>Mission summary and flight details</li><li>Survivor coordinates, evidence, and triage</li><li>Medical payload and responder handoff record</li><li>Hazard impact and safe access routes</li><li>Telemetry-mesh and vehicle event logs</li></ul></div>
         </section>
         <section className="panel mission-history">
           <header><div><span className="page-code">LOCAL ARCHIVE</span><h2>PREVIOUS MISSIONS</h2></div><label className="search-field"><input type="search" placeholder="Search missions"/></label></header>

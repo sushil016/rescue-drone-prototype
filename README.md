@@ -1,6 +1,6 @@
-# AEGIS Rescue Command
+# RoboNerve Emergency Response Command
 
-A Next.js App Router prototype for a disaster-response drone ground-control dashboard. It follows the MVP priorities in `AGENTS.md` and currently runs against a Gazebo SITL-style telemetry gateway.
+A Next.js App Router prototype for a role-based drone and robot emergency-response system. The current working scenario combines flood search, medical assistance, and rescue-team coordination using Gazebo SITL data.
 
 ## Run the prototype
 
@@ -29,11 +29,14 @@ npm run build
 
 ## Implemented in the first prototype
 
-- Live flood-response map with mission boundary, survey route, travelled route, GPS uncertainty, no-fly zone, safe/blocked routes, and clickable survivor/hazard markers
+- Live emergency-response map with mission boundary, survey route, role-based vehicle markers, GPS uncertainty, no-fly zone, safe/blocked routes, and clickable survivor/hazard markers
 - Simulated drone position, heading, altitude, speed, battery, flight mode, GPS/link health, and mission progress
 - RGB and thermal feed modes with detections, recording controls, capture feedback, metadata, and AI overlay control
 - Priority alert queue with acknowledgement and a confirmation-gated geotag medkit-drop action
-- Survivor/hazard review table with confirm and reject actions
+- Survivor/hazard review table with medical triage, confirm, and reject actions
+- Detection-to-handoff medical workflow covering geotag verification, triage, payload dispatch, and ground-team coordination
+- Role-based response assets: DR-01 survey/edge AI, DR-02 medical delivery, and DR-03 telemetry-mesh relay
+- UGV-01 shown explicitly as a planned ground-access extension, not as implemented hardware
 - Velocity-based CBF safety panel showing desired velocity, safe velocity, minimum clearance, barrier margin, and filter intervention
 - Confirmation-gated Return Home and Emergency Land commands
 - Full, filterable drone log stream covering flight, navigation, CBF, AI, commands, payload events, and telemetry-mesh health
@@ -60,13 +63,13 @@ The normalized fields and allowed mission states are declared in `TELEMETRY_CONT
 The prototype source path is:
 
 ```text
-Gazebo SITL → MAVLink/ROS bridge → backend telemetry gateway → Next.js dashboard
+Gazebo SITL fleet → MAVLink/ROS bridge → backend telemetry gateway → Next.js dashboard
 ```
 
 The intended product path is:
 
 ```text
-Drone flight computer → telemetry mesh → authenticated backend gateway → Next.js dashboard
+Response assets → telemetry mesh → authenticated backend gateway → Next.js dashboard
 ```
 
 The dashboard should receive normalized state and command acknowledgements from the backend. It must not assume Wi-Fi, 4G, or 5G connectivity to the aircraft.

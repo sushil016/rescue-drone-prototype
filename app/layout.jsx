@@ -1,15 +1,13 @@
 import "../src/styles.css";
-import { Inter } from "next/font/google";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-700.css";
+import "@fontsource/inter/latin-800.css";
 
 export const metadata = {
-  title: "AEGIS / Rescue Command",
-  description: "Autonomous disaster-response drone mission control dashboard.",
+  title: "RoboNerve / Emergency Response Command",
+  description: "Role-based drone and robot command system for search, rescue, and medical response.",
 };
 
 export const viewport = {
@@ -20,7 +18,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en">
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

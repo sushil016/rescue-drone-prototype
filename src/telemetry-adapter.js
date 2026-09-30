@@ -1,6 +1,6 @@
 /**
- * AEGIS telemetry boundary
- * -----------------------
+ * RoboNerve telemetry boundary
+ * ----------------------------
  * The UI only consumes this normalized shape. Replace createMockGateway with a
  * ROSBridge, MAVLink, WebSocket, or REST adapter without changing the views.
  */
@@ -21,7 +21,13 @@ export const TELEMETRY_CONTRACT = Object.freeze({
     required: ["connected", "networkType", "signalDbm", "linkQualityPercent", "telemetryLatencyMs", "lastCommunicationMs"],
   },
   payload: {
-    required: ["medkitsAvailable", "bayStatus", "lastDrop"],
+    required: ["assetId", "medkitsAvailable", "bayStatus", "lastDrop"],
+  },
+  fleet: {
+    required: ["id", "role", "status", "batteryPercent", "meshQualityPercent"],
+  },
+  medicalResponse: {
+    required: ["caseId", "targetId", "triage", "status", "assignedAsset", "assignedTeam", "stages"],
   },
   droneLog: {
     required: ["id", "time", "source", "level", "message", "data"],
@@ -42,6 +48,10 @@ const initialState = {
     id: "FLD-042",
     name: "Operation Varuna",
     disasterType: "Flood",
+    missionType: "Search + Medical Response",
+    region: "River District 07",
+    objective: "Detect, triage, assist, and hand over",
+    startedAt: "14:09:34",
     state: "Surveying",
     paused: false,
     elapsedSeconds: 1122,
@@ -82,9 +92,47 @@ const initialState = {
     lastCommunicationMs: 200,
   },
   payload: {
+    assetId: "DR-02",
     medkitsAvailable: 2,
     bayStatus: "Ready",
     lastDrop: null,
+  },
+  fleet: [
+    {
+      id: "DR-01", role: "Survey + Edge AI", status: "Surveying Sector C", sector: "Sector C",
+      batteryPercent: 72, meshQualityPercent: 91, mapX: 744, mapY: 444, implemented: true,
+    },
+    {
+      id: "DR-02", role: "Medical Delivery", status: "Ready at LZ-01", sector: "LZ-01",
+      batteryPercent: 88, meshQualityPercent: 94, mapX: 214, mapY: 464, implemented: true,
+    },
+    {
+      id: "DR-03", role: "Mesh Relay", status: "Relay active", sector: "East relay",
+      batteryPercent: 81, meshQualityPercent: 89, mapX: 812, mapY: 164, implemented: true,
+    },
+    {
+      id: "UGV-01", role: "Ground Access", status: "Planned extension", sector: "Future node",
+      batteryPercent: null, meshQualityPercent: null, mapX: null, mapY: null, implemented: false,
+    },
+  ],
+  medicalResponse: {
+    caseId: "MED-017",
+    targetId: "SV-017",
+    triage: "Immediate",
+    status: "Awaiting payload clearance",
+    requestedPayload: "Trauma medkit",
+    assignedAsset: "DR-02",
+    assignedTeam: "Alpha Medical",
+    teamEta: "04:12",
+    coordinates: "26.9126, 75.7873",
+    dropZone: "Coordinate verified · operator clearance required",
+    stages: [
+      { id: "detect", label: "Detect", detail: "AI + thermal", state: "complete" },
+      { id: "verify", label: "Verify", detail: "Geotag received", state: "complete" },
+      { id: "triage", label: "Triage", detail: "Immediate", state: "complete" },
+      { id: "dispatch", label: "Dispatch", detail: "DR-02 ready", state: "active" },
+      { id: "handoff", label: "Handoff", detail: "Alpha Medical", state: "pending" },
+    ],
   },
   edgeAi: {
     status: "Active",
@@ -108,18 +156,21 @@ const initialState = {
       id: "SV-017", kind: "survivor", label: "Survivor", condition: "Motionless · partially visible",
       people: 1, confidence: 94, accuracyM: 1.1, coordinates: "26.9126, 75.7873", location: "Rooftop C-14",
       severity: "Critical", priority: "Critical", verification: "Unverified", observedAt: "14:27:08", mapX: 666, mapY: 384,
-      nearbyHazards: ["Fast-moving floodwater"], responseStatus: "Team Alpha en route",
+      medicalPriority: "Immediate", requestedPayload: "Trauma medkit",
+      nearbyHazards: ["Fast-moving floodwater"], responseStatus: "Medkit clearance pending",
     },
     {
       id: "SV-021", kind: "survivor", label: "Probable survivor", condition: "Waving · thermal-only",
       people: 3, confidence: 87, accuracyM: 1.7, coordinates: "26.9142, 75.7901", location: "School roof, east",
       severity: "High", priority: "High", verification: "Probable", observedAt: "14:26:31", mapX: 820, mapY: 318,
+      medicalPriority: "Urgent", requestedPayload: "None",
       nearbyHazards: ["Floodwater"], responseStatus: "Awaiting verification",
     },
     {
       id: "SV-012", kind: "survivor", label: "Survivor", condition: "Moving · visible",
       people: 2, confidence: 98, accuracyM: 0.9, coordinates: "26.9108, 75.7819", location: "Market roof, west",
       severity: "Medium", priority: "Medium", verification: "Confirmed", observedAt: "14:18:44", mapX: 266, mapY: 338,
+      medicalPriority: "Delayed", requestedPayload: "None",
       nearbyHazards: [], responseStatus: "Rescue dispatched",
     },
     {
@@ -140,7 +191,7 @@ const initialState = {
       id: "AL-105", priority: "Critical", title: "Geotag received at coordinate",
       location: "26.9126, 75.7873", time: "14:27:22", action: "Medkit drop requested",
       actionCommand: "DROP_MEDKIT", targetId: "GT-204", coordinates: "26.9126, 75.7873",
-      assignedResponder: "DR-01", status: "Action required", acknowledged: false,
+      assignedResponder: "DR-02", status: "Action required", acknowledged: false,
     },
     {
       id: "AL-104", priority: "Critical", title: "Motionless survivor near flood channel",
@@ -178,6 +229,8 @@ const initialState = {
     { id: "LOG-008", time: "14:25:52.771", source: "NAV", level: "Warning", message: "Ground route marked blocked", data: "HZ-011 / fast-moving water" },
     { id: "LOG-009", time: "14:27:08.411", source: "AI", level: "Critical", message: "Motionless survivor detected", data: "SV-017 / rooftop C-14" },
     { id: "LOG-010", time: "14:27:22.063", source: "COMMS", level: "Critical", message: "Geotag received over telemetry mesh", data: "GT-204 / 26.9126, 75.7873" },
+    { id: "LOG-011", time: "14:27:22.119", source: "SYSTEM", level: "Notice", message: "Medical response case created", data: "MED-017 / triage Immediate / target SV-017" },
+    { id: "LOG-012", time: "14:27:22.284", source: "PAYLOAD", level: "Info", message: "Medical delivery asset assigned", data: "DR-02 / trauma medkit / operator clearance pending" },
   ],
 };
 
@@ -257,6 +310,13 @@ export function createMockGateway() {
       state.vehicle.altitudeM = 84.2 + Math.sin(tickCount / 8) * 0.45;
       state.vehicle.groundSpeedMps = 8.2 + Math.sin(tickCount / 5) * 0.35;
       state.vehicle.batteryPercent = Math.max(21, state.vehicle.batteryPercent - 0.0025);
+      const surveyAsset = state.fleet.find((asset) => asset.id === state.vehicle.id);
+      if (surveyAsset) {
+        surveyAsset.batteryPercent = Math.floor(state.vehicle.batteryPercent);
+        surveyAsset.meshQualityPercent = state.communication.linkQualityPercent;
+        surveyAsset.mapX = state.vehicle.position.mapX;
+        surveyAsset.mapY = state.vehicle.position.mapY;
+      }
 
       const obstacleWave = (Math.sin(tickCount / 9) + 1) / 2;
       const intervening = obstacleWave > 0.72;
@@ -360,14 +420,26 @@ export function createMockGateway() {
             coordinates,
             time: new Date().toISOString(),
             result: "Released in Gazebo SITL",
+            assetId: state.payload.assetId,
           };
           if (alert) {
             alert.acknowledged = true;
             alert.status = "Medkit dispatched";
           }
-          reason = `Medkit released at ${coordinates} in Gazebo SITL`;
-          addTimeline("Medkit dispatched", `${payload.targetId ?? alert?.targetId ?? "GEOTAG"} · ${coordinates}`, "detection");
-          addDroneLog("PAYLOAD", "Notice", "Medkit drop command completed", `${coordinates} / ${state.payload.medkitsAvailable} remaining`);
+          const deliveryAsset = state.fleet.find((asset) => asset.id === state.payload.assetId);
+          if (deliveryAsset) deliveryAsset.status = "Payload delivered · returning";
+          state.medicalResponse.status = "Medkit delivered · team handoff active";
+          state.medicalResponse.dropZone = "SITL release complete · coordinate logged";
+          state.medicalResponse.stages = state.medicalResponse.stages.map((stage) => {
+            if (stage.id === "dispatch") return { ...stage, detail: "Medkit delivered", state: "complete" };
+            if (stage.id === "handoff") return { ...stage, detail: "Alpha en route", state: "active" };
+            return stage;
+          });
+          const target = state.detections.find((item) => item.id === state.medicalResponse.targetId);
+          if (target) target.responseStatus = "Medkit delivered · team en route";
+          reason = `${state.payload.assetId} released one medkit at ${coordinates} in Gazebo SITL`;
+          addTimeline("Medkit dispatched", `${state.payload.assetId} → ${payload.targetId ?? alert?.targetId ?? "GEOTAG"}`, "detection");
+          addDroneLog("PAYLOAD", "Notice", "Medkit drop command completed", `${state.payload.assetId} / ${coordinates} / ${state.payload.medkitsAvailable} remaining`);
           break;
         }
         case "ACK_ALERT": {
